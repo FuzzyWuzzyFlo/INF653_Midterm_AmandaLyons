@@ -20,28 +20,27 @@ $category_id = isset($_GET['category_id']) ? $_GET['category_id'] : null;
 if ($id || $author_id || $category_id) {
     $result = $quote->readFiltered($id, $author_id, $category_id);
 } else {
-    $result = $quote->read();
+    $result = $quote->read(); // Read all quotes
 }
 
 $num = $result->rowCount();
 
 if ($num > 0) {
     $quotes_arr = [];
-    $quotes_arr['data'] = [];
 
     while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
         $quote_item = [
             'id' => $row['id'],
             'quote' => $row['quote'],
-            'author_id' => $row['author_id'],
-            'category_id' => $row['category_id']
+            'author' => $row['author'], // Return author name instead of ID
+            'category' => $row['category'] // Return category name instead of ID
         ];
 
-        $quotes_arr['data'][] = $quote_item;
+        $quotes_arr[] = $quote_item; // Push each quote into the array
     }
 
+    // Output as JSON array
     echo json_encode($quotes_arr);
 } else {
     echo json_encode(['message' => 'No Quotes Found']);
 }
-

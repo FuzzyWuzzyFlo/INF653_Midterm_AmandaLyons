@@ -6,8 +6,8 @@ class Quote {
     // Properties
     public $id;
     public $quote;
-    public $author_id;
-    public $category_id;
+    public $author;
+    public $category;
 
     // ======================
     // Constructor
@@ -20,7 +20,19 @@ class Quote {
     // READ ALL QUOTES
     // ======================
     public function read() {
-        $query = 'SELECT * FROM ' . $this->table;
+        $query = 'SELECT 
+                    q.id, 
+                    q.quote, 
+                    a.author AS author, 
+                    c.category AS category
+                  FROM 
+                    ' . $this->table . ' q
+                  LEFT JOIN 
+                    authors a ON q.author_id = a.id
+                  LEFT JOIN 
+                    categories c ON q.category_id = c.id
+                  LIMIT 25';
+
         $stmt = $this->conn->prepare($query);
 
         try {
@@ -37,16 +49,27 @@ class Quote {
     // READ SINGLE OR FILTERED QUOTES
     // ======================
     public function readFiltered($id = null, $author_id = null, $category_id = null) {
-        $query = 'SELECT * FROM ' . $this->table . ' WHERE 1=1';
+        $query = 'SELECT 
+                    q.id, 
+                    q.quote, 
+                    a.author AS author, 
+                    c.category AS category
+                  FROM 
+                    ' . $this->table . ' q
+                  LEFT JOIN 
+                    authors a ON q.author_id = a.id
+                  LEFT JOIN 
+                    categories c ON q.category_id = c.id
+                  WHERE 1=1';
 
         if (!empty($id)) {
-            $query .= ' AND id = :id';
+            $query .= ' AND q.id = :id';
         }
         if (!empty($author_id)) {
-            $query .= ' AND author_id = :author_id';
+            $query .= ' AND q.author_id = :author_id';
         }
         if (!empty($category_id)) {
-            $query .= ' AND category_id = :category_id';
+            $query .= ' AND q.category_id = :category_id';
         }
 
         $stmt = $this->conn->prepare($query);
@@ -70,6 +93,9 @@ class Quote {
         }
     }
 
+    // ======================
+    // CREATE QUOTE
+    // ======================
     public function create() {
         if (
             empty($this->quote) || 
@@ -79,20 +105,21 @@ class Quote {
             echo json_encode(['message' => 'Missing required fields']);
             return false;
         }
-    
+
         $query = 'INSERT INTO ' . $this->table . ' 
-                  SET quote = :quote, author_id = :author_id, category_id = :category_id';
-    
+                  SET quote = :quote, 
+                      author_id = :author_id, 
+                      category_id = :category_id';
+
         $stmt = $this->conn->prepare($query);
-    
-        // ✅ Clean numeric values but keep the quote string raw
+
         $this->author_id = intval($this->author_id);
         $this->category_id = intval($this->category_id);
-    
+
         $stmt->bindValue(':quote', $this->quote, PDO::PARAM_STR);
         $stmt->bindValue(':author_id', $this->author_id, PDO::PARAM_INT);
         $stmt->bindValue(':category_id', $this->category_id, PDO::PARAM_INT);
-    
+
         try {
             if ($stmt->execute()) {
                 return true;
@@ -102,97 +129,83 @@ class Quote {
             echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
             return false;
         }
-    
+
         return false;
     }
-    
-
-// ======================
-// UPDATE QUOTE
-// ======================
-public function update() {
-    if (
-        !isset($this->id) ||
-        empty($this->quote) || 
-        empty($this->author_id) || 
-        empty($this->category_id)
-    ) {
-        echo json_encode(['message' => 'Missing required fields']);
-        return false;
-    }
-
-    $query = 'UPDATE ' . $this->table . ' 
-              SET quote = :quote, author_id = :author_id, category_id = :category_id 
-              WHERE id = :id';
-
-    $stmt = $this->conn->prepare($query);
-
-    // ✅ Clean numeric values but keep the quote string raw
-    $this->author_id = intval($this->author_id);
-    $this->category_id = intval($this->category_id);
-    $this->id = intval($this->id);
-
-    $stmt->bindValue(':quote', $this->quote, PDO::PARAM_STR);
-    $stmt->bindValue(':author_id', $this->author_id, PDO::PARAM_INT);
-    $stmt->bindValue(':category_id', $this->category_id, PDO::PARAM_INT);
-    $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
-
-    try {
-        if ($stmt->execute()) {
-            if ($stmt->rowCount()) {
-                return true;
-            } else {
-                echo json_encode(['message' => 'No changes made or ID not found']);
-                return false;
-            }
-        }
-    } catch (PDOException $e) {
-        error_log("SQL Error: " . $e->getMessage());
-        echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
-        return false;
-    }
-
-    return false;
-}
 
     // ======================
-// DELETE QUOTE
-// ======================
-public function delete() {
-    // ✅ Validate ID (no empty check)
-    if (!isset($this->id) || intval($this->id) <= 0) {
-        echo json_encode(['message' => 'Missing or invalid ID']);
-        return false;
-    }
-
-    // ✅ Check if ID exists before trying to delete
-    $query = 'SELECT id FROM ' . $this->table . ' WHERE id = :id';
-    $stmt = $this->conn->prepare($query);
-    $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
-    $stmt->execute();
-
-    if (!$stmt->rowCount()) {
-        echo json_encode(['message' => 'No quote found with the specified ID']);
-        return false;
-    }
-
-    // ✅ Proceed with deletion
-    $query = 'DELETE FROM ' . $this->table . ' WHERE id = :id';
-    $stmt = $this->conn->prepare($query);
-    $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
-
-    try {
-        if ($stmt->execute()) {
-            echo json_encode(['message' => 'Quote deleted']);
-            return true;
+    // UPDATE QUOTE
+    // ======================
+    public function update() {
+        if (
+            !isset($this->id) ||
+            empty($this->quote) || 
+            empty($this->author_id) || 
+            empty($this->category_id)
+        ) {
+            echo json_encode(['message' => 'Missing required fields']);
+            return false;
         }
-    } catch (PDOException $e) {
-        error_log("SQL Error: " . $e->getMessage());
-        echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
+
+        $query = 'UPDATE ' . $this->table . ' 
+                  SET quote = :quote, 
+                      author_id = :author_id, 
+                      category_id = :category_id 
+                  WHERE id = :id';
+
+        $stmt = $this->conn->prepare($query);
+
+        $this->author_id = intval($this->author_id);
+        $this->category_id = intval($this->category_id);
+        $this->id = intval($this->id);
+
+        $stmt->bindValue(':quote', $this->quote, PDO::PARAM_STR);
+        $stmt->bindValue(':author_id', $this->author_id, PDO::PARAM_INT);
+        $stmt->bindValue(':category_id', $this->category_id, PDO::PARAM_INT);
+        $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
+
+        try {
+            if ($stmt->execute()) {
+                if ($stmt->rowCount()) {
+                    return true;
+                } else {
+                    echo json_encode(['message' => 'No changes made or ID not found']);
+                    return false;
+                }
+            }
+        } catch (PDOException $e) {
+            error_log("SQL Error: " . $e->getMessage());
+            echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
+            return false;
+        }
+
         return false;
     }
 
-    return false;
-}
+    // ======================
+    // DELETE QUOTE
+    // ======================
+    public function delete() {
+        if (!isset($this->id) || intval($this->id) <= 0) {
+            echo json_encode(['message' => 'Missing or invalid ID']);
+            return false;
+        }
 
+        $query = 'DELETE FROM ' . $this->table . ' WHERE id = :id';
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
+
+        try {
+            if ($stmt->execute()) {
+                echo json_encode(['message' => 'Quote deleted']);
+                return true;
+            }
+        } catch (PDOException $e) {
+            error_log("SQL Error: " . $e->getMessage());
+            echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
+            return false;
+        }
+
+        return false;
+    }
 }
