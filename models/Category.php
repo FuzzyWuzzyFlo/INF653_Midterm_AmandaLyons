@@ -68,38 +68,33 @@
   
 
   public function create() {
-    // Validate input
     if (empty($this->category)) {
-        echo "Category value is empty or invalid.";
+        echo json_encode(['message' => 'Missing Required Parameters']);
         return false;
     }
 
-    // Create Query
-    $query = 'INSERT INTO ' . $this->table . ' 
-              SET category = :category';
+    $query = 'INSERT INTO categories (category) 
+              VALUES (:category)';
 
-    // Prepare Statement
     $stmt = $this->conn->prepare($query);
+    $stmt->bindValue(':category', $this->category, PDO::PARAM_STR);
 
-    // Clean data
-    $this->category = htmlspecialchars(strip_tags($this->category));
-
-    // Bind data (fixed binding name)
-    $stmt->bindParam(':category', $this->category);
-
-    // Execute query
     try {
         if ($stmt->execute()) {
+            $this->id = $this->conn->lastInsertId();
+
+            echo json_encode([
+                'id' => $this->id,
+                'category' => $this->category
+            ]);
             return true;
         }
     } catch (PDOException $e) {
-        echo "Insert failed: " . $e->getMessage();
+        error_log("SQL Error: " . $e->getMessage());
+        echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
         return false;
     }
 
-    // Output detailed error if execute fails
-    $error = $stmt->errorInfo();
-    echo "SQL Error: " . $error[2];
     return false;
 }
 

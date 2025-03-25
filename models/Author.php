@@ -60,31 +60,38 @@
       }
   }
   
-
-    // Create Author
-    public function create() {
-      // Create query
-      $query = 'INSERT INTO ' . $this->table . ' SET author = :author';
-
-      // Prepare statement
-      $stmt = $this->conn->prepare($query);
-
-      // Clean data
-      $this->author = htmlspecialchars(strip_tags($this->author));
-
-      // Bind data
-      $stmt->bindParam(':author', $this->author);
-
-      // Execute query
-      if ($stmt->execute()) {
-        return true;
-      }
-
-      // Print error if something goes wrong
-      printf("Error: %s.\n", $stmt->error);
-
-      return false;
+//create author
+  public function create() {
+    if (empty($this->author)) {
+        echo json_encode(['message' => 'Missing Required Parameters']);
+        return false;
     }
+
+    $query = 'INSERT INTO authors (author) 
+              VALUES (:author)';
+
+    $stmt = $this->conn->prepare($query);
+    $stmt->bindValue(':author', $this->author, PDO::PARAM_STR);
+
+    try {
+        if ($stmt->execute()) {
+            $this->id = $this->conn->lastInsertId();
+
+            echo json_encode([
+                'id' => $this->id,
+                'author' => $this->author
+            ]);
+            return true;
+        }
+    } catch (PDOException $e) {
+        error_log("SQL Error: " . $e->getMessage());
+        echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
+        return false;
+    }
+
+    return false;
+}
+
 
     // Update Author
     public function update() {

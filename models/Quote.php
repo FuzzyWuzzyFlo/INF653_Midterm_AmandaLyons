@@ -93,35 +93,47 @@ class Quote {
         }
     }
 
-    // ======================
-    // CREATE QUOTE
-    // ======================
+    //create quote
     public function create() {
         if (
             empty($this->quote) || 
             empty($this->author_id) || 
             empty($this->category_id)
         ) {
-            echo json_encode(['message' => 'Missing required fields']);
+            echo json_encode(['message' => 'Missing Required Parameters']);
             return false;
         }
-
+    
+        // ✅ Check if author_id and category_id exist
+        if (!$this->isValidAuthor($this->author_id)) {
+            echo json_encode(['message' => 'author_id Not Found']);
+            return false;
+        }
+    
+        if (!$this->isValidCategory($this->category_id)) {
+            echo json_encode(['message' => 'category_id Not Found']);
+            return false;
+        }
+    
         $query = 'INSERT INTO ' . $this->table . ' 
-                  SET quote = :quote, 
-                      author_id = :author_id, 
-                      category_id = :category_id';
-
+                  SET quote = :quote, author_id = :author_id, category_id = :category_id';
+    
         $stmt = $this->conn->prepare($query);
-
-        $this->author_id = intval($this->author_id);
-        $this->category_id = intval($this->category_id);
-
+    
         $stmt->bindValue(':quote', $this->quote, PDO::PARAM_STR);
         $stmt->bindValue(':author_id', $this->author_id, PDO::PARAM_INT);
         $stmt->bindValue(':category_id', $this->category_id, PDO::PARAM_INT);
-
+    
         try {
             if ($stmt->execute()) {
+                $this->id = $this->conn->lastInsertId();
+    
+                echo json_encode([
+                    'id' => $this->id,
+                    'quote' => $this->quote,
+                    'author_id' => $this->author_id,
+                    'category_id' => $this->category_id
+                ]);
                 return true;
             }
         } catch (PDOException $e) {
@@ -129,9 +141,26 @@ class Quote {
             echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
             return false;
         }
-
+    
         return false;
     }
+    
+    private function isValidAuthor($author_id) {
+        $query = 'SELECT id FROM authors WHERE id = :author_id';
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':author_id', $author_id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
+    }
+    
+    private function isValidCategory($category_id) {
+        $query = 'SELECT id FROM categories WHERE id = :category_id';
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':category_id', $category_id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
+    }
+    
 
     // ======================
     // UPDATE QUOTE
