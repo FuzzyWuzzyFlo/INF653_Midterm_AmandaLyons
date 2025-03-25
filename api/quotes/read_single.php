@@ -14,7 +14,7 @@ $db = $database->connect();
 $quote = new Quote($db);
 
 // Get ID from the URL parameter
-$quote->id = isset($_GET['id']) ? (int)$_GET['id'] : null;
+$quote->id = isset($_GET['id']) ? intval($_GET['id']) : null;
 
 // Validate ID
 if (empty($quote->id)) {
@@ -22,19 +22,17 @@ if (empty($quote->id)) {
     exit;
 }
 
-// Fetch the single quote
-$result = $quote->readFiltered($quote->id);
-$quote_data = $result->fetch(PDO::FETCH_ASSOC);
-
-if ($quote_data) {
+// Fetch the single quote using readSingle()
+if ($quote->readSingle()) {
     // Return the single quote as JSON
     echo json_encode([
-        'id' => $quote_data['id'],
-        'quote' => $quote_data['quote'],
-        'author_id' => $quote_data['author_id'],
-        'category_id' => $quote_data['category_id']
+        'id' => $quote->id,
+        'quote' => $quote->quote,
+        'author' => $quote->author, // Return author name instead of ID
+        'category' => $quote->category // Return category name instead of ID
     ]);
 } else {
     // No quote found
     echo json_encode(['message' => 'Quote not found']);
 }
+

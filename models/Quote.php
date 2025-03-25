@@ -208,4 +208,47 @@ class Quote {
 
         return false;
     }
+
+    // ======================
+    // READ SINGLE QUOTE
+    // ======================
+    
+    public function readSingle() {
+        $query = 'SELECT 
+                    q.id, 
+                    q.quote, 
+                    a.author AS author, 
+                    c.category AS category
+                  FROM ' . $this->table . ' q
+                  LEFT JOIN authors a ON q.author_id = a.id
+                  LEFT JOIN categories c ON q.category_id = c.id
+                  WHERE q.id = :id
+                  LIMIT 1';
+    
+        $stmt = $this->conn->prepare($query);
+    
+        // Bind the ID
+        $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
+    
+        try {
+            $stmt->execute();
+    
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+            if ($row) {
+                $this->quote = $row['quote'];
+                $this->author = $row['author'];   // ✅ Return author name instead of ID
+                $this->category = $row['category']; // ✅ Return category name instead of ID
+                return true;
+            }
+    
+            return false; // No result found
+    
+        } catch (PDOException $e) {
+            error_log("SQL Error: " . $e->getMessage());
+            echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
+            return false;
+        }
+    }
+    
 }
