@@ -219,14 +219,29 @@ class Quote {
             echo json_encode(['message' => 'Missing or invalid ID']);
             return false;
         }
-
+    
+        // Check if ID exists before trying to delete
+        $query = 'SELECT id FROM ' . $this->table . ' WHERE id = :id';
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
+        $stmt->execute();
+    
+        if (!$stmt->rowCount()) {
+            echo json_encode(['message' => 'No quote found with the specified ID']);
+            return false;
+        }
+    
+        // Proceed with deletion
         $query = 'DELETE FROM ' . $this->table . ' WHERE id = :id';
         $stmt = $this->conn->prepare($query);
         $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
-
+    
         try {
             if ($stmt->execute()) {
-                echo json_encode(['message' => 'Quote deleted']);
+                echo json_encode([
+                    'id' => $this->id,
+                    'message' => 'Quote deleted'
+                ]);
                 return true;
             }
         } catch (PDOException $e) {
@@ -234,9 +249,10 @@ class Quote {
             echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
             return false;
         }
-
+    
         return false;
     }
+    
 
     // ======================
     // READ SINGLE QUOTE

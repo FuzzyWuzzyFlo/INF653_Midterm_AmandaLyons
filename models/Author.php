@@ -148,26 +148,40 @@ public function updateID() {
 
     // Delete Author
     public function delete() {
-      // Create query
-      $query = 'DELETE FROM ' . $this->table . ' WHERE id = :id';
-
-      // Prepare statement
-      $stmt = $this->conn->prepare($query);
-
-      // Clean data
-      $this->id = htmlspecialchars(strip_tags($this->id));
-
-      // Bind data
-      $stmt->bindParam(':id', $this->id);
-
-      // Execute query
-      if ($stmt->execute()) {
-        return true;
+      if (!isset($this->id) || intval($this->id) <= 0) {
+          echo json_encode(['message' => 'Missing or invalid ID']);
+          return false;
       }
-
-      // Print error if something goes wrong
-      printf("Error: %s.\n", $stmt->error);
-
+  
+      // Check if ID exists before trying to delete
+      $query = 'SELECT id FROM authors WHERE id = :id';
+      $stmt = $this->conn->prepare($query);
+      $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
+      $stmt->execute();
+  
+      if (!$stmt->rowCount()) {
+          echo json_encode(['message' => 'No author found with the specified ID']);
+          return false;
+      }
+  
+      $query = 'DELETE FROM authors WHERE id = :id';
+      $stmt = $this->conn->prepare($query);
+      $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
+  
+      try {
+          if ($stmt->execute()) {
+              echo json_encode([
+                  'id' => $this->id,
+                  'message' => 'Author deleted'
+              ]);
+              return true;
+          }
+      } catch (PDOException $e) {
+          error_log("SQL Error: " . $e->getMessage());
+          echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
+          return false;
+      }
+  
       return false;
-    }
+  }  
   }
