@@ -1,31 +1,32 @@
 <?php
-  // Headers
-  header('Access-Control-Allow-Origin: *');
-  header('Content-Type: application/json');
-  header('Access-Control-Allow-Methods: POST');
-  header('Access-Control-Allow-Headers: Access-Control-Allow-Headers, Content-Type, Access-Control-Allow-Methods, Authorization,X-Requested-With');
+// Headers
+header('Access-Control-Allow-Origin: *');
+header('Content-Type: application/json');
 
-  include_once '../../config/Database.php';
-  include_once '../../models/Author.php';
-  // Instantiate DB & connect
-  $database = new Database();
-  $db = $database->connect();
+include_once '../../config/Database.php';
+include_once '../../models/Author.php';
 
-  // Instantiate blog post object
-  $author = new Author($db);
+// Instantiate DB & connect
+$database = new Database();
+$db = $database->connect();
 
-  // Get raw posted data
-  $data = json_decode(file_get_contents("php://input"));
+// Instantiate author object
+$author = new Author($db);
 
-  $author->author = $data->author;
+// Get raw posted data
+$data = json_decode(file_get_contents("php://input"));
 
-  // Create Category
-  if($author->create()) {
-    echo json_encode(
-      array('message' => 'Author Created')
-    );
-  } else {
-    echo json_encode(
-      array('message' => 'Author Not Created')
-    );
-  }
+if (!empty($data->author)) {
+    $author->author = $data->author;
+
+    if ($author->create()) {
+        echo json_encode([
+            'id' => $author->id,
+            'author' => $author->author
+        ]);
+    } else {
+        echo json_encode(['message' => 'Failed to create author']);
+    }
+} else {
+    echo json_encode(['message' => 'Missing Required Parameters']);
+}

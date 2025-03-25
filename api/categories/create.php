@@ -1,31 +1,32 @@
 <?php
-  // Headers
-  header('Access-Control-Allow-Origin: *');
-  header('Content-Type: application/json');
-  header('Access-Control-Allow-Methods: POST');
-  header('Access-Control-Allow-Headers: Access-Control-Allow-Headers, Content-Type, Access-Control-Allow-Methods, Authorization,X-Requested-With');
+// Headers
+header('Access-Control-Allow-Origin: *');
+header('Content-Type: application/json');
 
-  include_once '../../config/Database.php';
-  include_once '../../models/Category.php';
-  // Instantiate DB & connect
-  $database = new Database();
-  $db = $database->connect();
+include_once '../../config/Database.php';
+include_once '../../models/Category.php';
 
-  // Instantiate object
-  $category = new Category($db);
+// Instantiate DB & connect
+$database = new Database();
+$db = $database->connect();
 
-  // Get raw posted data
-  $data = json_decode(file_get_contents("php://input"));
+// Instantiate category object
+$category = new Category($db);
 
-  $category->category = $data->category;
+// Get raw posted data
+$data = json_decode(file_get_contents("php://input"));
 
-  // Create Category
-  if($category->create()) {
-    echo json_encode(
-      array('message' => 'Category Created')
-    );
-  } else {
-    echo json_encode(
-      array('message' => 'Category Not Created')
-    );
-  }
+if (!empty($data->category)) {
+    $category->category = $data->category;
+
+    if ($category->create()) {
+        echo json_encode([
+            'id' => $category->id,
+            'category' => $category->category
+        ]);
+    } else {
+        echo json_encode(['message' => 'Failed to create category']);
+    }
+} else {
+    echo json_encode(['message' => 'Missing Required Parameters']);
+}
