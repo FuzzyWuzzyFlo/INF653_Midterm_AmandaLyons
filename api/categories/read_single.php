@@ -6,30 +6,31 @@ header('Content-Type: application/json');
 include_once '../../config/Database.php';
 include_once '../../models/Category.php';
 
-// Instantiate DB & connect
+// Instantiate Database & connect
 $database = new Database();
 $db = $database->connect();
 
-// Instantiate object
+// Instantiate Category object
 $category = new Category($db);
 
-// Get ID
-$category->id = isset($_GET['id']) ? $_GET['id'] : die(json_encode(['message' => 'Missing ID']));
+// Get ID from the URL parameter
+$category->id = isset($_GET['id']) ? (int)$_GET['id'] : null;
 
-// Get category
-$category->read_single();
-
-if ($category->category) {
-    // Create array
-    $category_arr = array(
-        'id' => $category->id,
-        'category' => $category->category,
-    );
-
-    // Make JSON
-    echo json_encode($category_arr);
-} else {
-    // Set response code - 404 Not Found
-    http_response_code(404);
-    echo json_encode(['message' => 'Category_Id not found']);
+// Validate ID
+if (empty($category->id)) {
+    echo json_encode(['message' => 'Missing required ID']);
+    exit;
 }
+
+// Fetch the single category
+if ($category->readSingle()) {
+    // Return the single category as JSON
+    echo json_encode([
+        'id' => $category->id,
+        'category' => $category->category
+    ]);
+} else {
+    // No category found
+    echo json_encode(['message' => 'Category not found']);
+}
+?>

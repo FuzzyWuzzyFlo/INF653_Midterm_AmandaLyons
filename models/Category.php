@@ -34,31 +34,38 @@
     }
 
     // Get Single Category
-  public function read_single(){
-    // Create query
-    $query = 'SELECT
-          id,
-          category
-        FROM
-          ' . $this->table . '
-      WHERE id = ?
-      LIMIT 0,1';
-
-      //Prepare statement
+    public function readSingle() {
+      $query = 'SELECT 
+                  id, 
+                  category 
+                FROM 
+                  categories 
+                WHERE 
+                  id = :id
+                LIMIT 1';
+  
       $stmt = $this->conn->prepare($query);
-
-      // Bind ID
-      $stmt->bindParam(1, $this->id);
-
-      // Execute query
-      $stmt->execute();
-
-      $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-      // set properties
-      $this->id = $row['id'];
-      $this->category = $row['category'];
+      $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
+  
+      try {
+          $stmt->execute();
+          $row = $stmt->fetch(PDO::FETCH_ASSOC);
+  
+          if ($row) {
+              $this->id = $row['id'];
+              $this->category = $row['category'];
+              return true;
+          }
+  
+          return false; // No category found
+  
+      } catch (PDOException $e) {
+          error_log("SQL Error: " . $e->getMessage());
+          echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
+          return false;
+      }
   }
+  
 
   public function create() {
     // Validate input
