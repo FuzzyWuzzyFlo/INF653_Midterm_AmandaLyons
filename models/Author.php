@@ -28,25 +28,38 @@
     }
 
     // Get Single Author
-    public function read_single() {
-      // Create query
-      $query = 'SELECT id, author FROM ' . $this->table . ' WHERE id = ? LIMIT 0,1';
-
-      // Prepare statement
+    public function readSingle() {
+      $query = 'SELECT 
+                  id, 
+                  author 
+                FROM 
+                  authors 
+                WHERE 
+                  id = :id
+                LIMIT 1';
+  
       $stmt = $this->conn->prepare($query);
-
-      // Bind ID
-      $stmt->bindParam(1, $this->id);
-
-      // Execute query
-      $stmt->execute();
-
-      $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-      // Set properties
-      $this->id = $row['id'];
-      $this->author = $row['author'];
-    }
+      $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
+  
+      try {
+          $stmt->execute();
+          $row = $stmt->fetch(PDO::FETCH_ASSOC);
+  
+          if ($row) {
+              $this->id = $row['id'];
+              $this->author = $row['author'];
+              return true;
+          }
+  
+          return false; // No result found
+  
+      } catch (PDOException $e) {
+          error_log("SQL Error: " . $e->getMessage());
+          echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
+          return false;
+      }
+  }
+  
 
     // Create Author
     public function create() {
