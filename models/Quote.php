@@ -215,20 +215,19 @@ class Quote {
     // DELETE QUOTE
     // ======================
     public function delete() {
+        // Validate ID
         if (!isset($this->id) || intval($this->id) <= 0) {
-            echo json_encode(['message' => 'Missing or invalid ID']);
-            return false;
+            return ['status' => 400, 'message' => 'Missing or invalid ID'];
         }
     
-        // Check if ID exists before trying to delete
+        // Check if ID exists before deleting
         $query = 'SELECT id FROM ' . $this->table . ' WHERE id = :id';
         $stmt = $this->conn->prepare($query);
         $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
         $stmt->execute();
     
         if (!$stmt->rowCount()) {
-            echo json_encode(['message' => 'No quote found with the specified ID']);
-            return false;
+            return ['status' => 404, 'message' => 'No quote found with the specified ID'];
         }
     
         // Proceed with deletion
@@ -238,16 +237,15 @@ class Quote {
     
         try {
             if ($stmt->execute()) {
-                echo json_encode([
+                return [
+                    'status' => 200,
                     'id' => $this->id,
                     'message' => 'Quote deleted'
-                ]);
-                return true;
+                ];
             }
         } catch (PDOException $e) {
             error_log("SQL Error: " . $e->getMessage());
-            echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
-            return false;
+            return ['status' => 500, 'message' => 'SQL Error: ' . $e->getMessage()];
         }
     
         return false;

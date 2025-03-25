@@ -146,42 +146,42 @@ public function updateID() {
     return false;
   }
 
-    // Delete Author
-    public function delete() {
-      if (!isset($this->id) || intval($this->id) <= 0) {
-          echo json_encode(['message' => 'Missing or invalid ID']);
-          return false;
-      }
-  
-      // Check if ID exists before trying to delete
-      $query = 'SELECT id FROM authors WHERE id = :id';
-      $stmt = $this->conn->prepare($query);
-      $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
-      $stmt->execute();
-  
-      if (!$stmt->rowCount()) {
-          echo json_encode(['message' => 'No author found with the specified ID']);
-          return false;
-      }
-  
-      $query = 'DELETE FROM authors WHERE id = :id';
-      $stmt = $this->conn->prepare($query);
-      $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
-  
-      try {
-          if ($stmt->execute()) {
-              echo json_encode([
-                  'id' => $this->id,
-                  'message' => 'Author deleted'
-              ]);
-              return true;
-          }
-      } catch (PDOException $e) {
-          error_log("SQL Error: " . $e->getMessage());
-          echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
-          return false;
-      }
-  
-      return false;
-  }  
-  }
+  //delete author
+  public function delete() {
+    // Validate ID
+    if (!isset($this->id) || intval($this->id) <= 0) {
+        return ['status' => 400, 'message' => 'Missing or invalid ID'];
+    }
+
+    // Check if ID exists
+    $query = 'SELECT id FROM authors WHERE id = :id';
+    $stmt = $this->conn->prepare($query);
+    $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
+    $stmt->execute();
+
+    if (!$stmt->rowCount()) {
+        return ['status' => 404, 'message' => 'No author found with the specified ID'];
+    }
+
+    // Proceed with deletion
+    $query = 'DELETE FROM authors WHERE id = :id';
+    $stmt = $this->conn->prepare($query);
+    $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
+
+    try {
+        if ($stmt->execute()) {
+            return [
+                'status' => 200,
+                'id' => $this->id,
+                'message' => 'Author deleted'
+            ];
+        }
+    } catch (PDOException $e) {
+        error_log("SQL Error: " . $e->getMessage());
+        return ['status' => 500, 'message' => 'SQL Error: ' . $e->getMessage()];
+    }
+
+    return false;
+}
+
+}

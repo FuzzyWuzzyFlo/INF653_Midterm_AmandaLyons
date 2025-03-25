@@ -131,38 +131,37 @@
 
   // Delete Category
   public function delete() {
+    //  Validate ID
     if (!isset($this->id) || intval($this->id) <= 0) {
-        echo json_encode(['message' => 'Missing or invalid ID']);
-        return false;
+        return ['status' => 400, 'message' => 'Missing or invalid ID'];
     }
 
-    // ✅ Check if ID exists before trying to delete
+    // Check if ID exists before deleting
     $query = 'SELECT id FROM categories WHERE id = :id';
     $stmt = $this->conn->prepare($query);
     $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
     $stmt->execute();
 
     if (!$stmt->rowCount()) {
-        echo json_encode(['message' => 'No category found with the specified ID']);
-        return false;
+        return ['status' => 404, 'message' => 'No category found with the specified ID'];
     }
 
+    // Proceed with deletion
     $query = 'DELETE FROM categories WHERE id = :id';
     $stmt = $this->conn->prepare($query);
     $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
 
     try {
         if ($stmt->execute()) {
-            echo json_encode([
+            return [
+                'status' => 200,
                 'id' => $this->id,
                 'message' => 'Category deleted'
-            ]);
-            return true;
+            ];
         }
     } catch (PDOException $e) {
         error_log("SQL Error: " . $e->getMessage());
-        echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
-        return false;
+        return ['status' => 500, 'message' => 'SQL Error: ' . $e->getMessage()];
     }
 
     return false;
