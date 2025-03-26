@@ -100,23 +100,26 @@ class Quote {
             empty($this->author_id) || 
             empty($this->category_id)
         ) {
+            http_response_code(400); // Bad Request
             echo json_encode(['message' => 'Missing Required Parameters']);
             return false;
         }
     
-        // ✅ Check if author_id and category_id exist
+        // Check if author_id and category_id exist
         if (!$this->isValidAuthor($this->author_id)) {
+            http_response_code(404);
             echo json_encode(['message' => 'author_id Not Found']);
             return false;
         }
     
         if (!$this->isValidCategory($this->category_id)) {
+            http_response_code(404);
             echo json_encode(['message' => 'category_id Not Found']);
             return false;
         }
     
-        $query = 'INSERT INTO ' . $this->table . ' 
-                  SET quote = :quote, author_id = :author_id, category_id = :category_id';
+        $query = 'INSERT INTO ' . $this->table . ' (quote, author_id, category_id)
+                  VALUES (:quote, :author_id, :category_id)';
     
         $stmt = $this->conn->prepare($query);
     
@@ -128,6 +131,7 @@ class Quote {
             if ($stmt->execute()) {
                 $this->id = $this->conn->lastInsertId();
     
+                http_response_code(201); // Created
                 echo json_encode([
                     'id' => $this->id,
                     'quote' => $this->quote,
@@ -137,28 +141,13 @@ class Quote {
                 return true;
             }
         } catch (PDOException $e) {
+            http_response_code(500); // Internal Server Error
             error_log("SQL Error: " . $e->getMessage());
             echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
             return false;
         }
     
         return false;
-    }
-    
-    private function isValidAuthor($author_id) {
-        $query = 'SELECT id FROM authors WHERE id = :author_id';
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':author_id', $author_id, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->rowCount() > 0;
-    }
-    
-    private function isValidCategory($category_id) {
-        $query = 'SELECT id FROM categories WHERE id = :category_id';
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':category_id', $category_id, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->rowCount() > 0;
     }
     
 
@@ -172,44 +161,68 @@ class Quote {
             empty($this->author_id) || 
             empty($this->category_id)
         ) {
-            echo json_encode(['message' => 'Missing required fields']);
+            http_response_code(400); // Bad request
+            echo json_encode(['message' => 'Missing Required Parameters']);
             return false;
         }
-
+    
+        // Optionally: validate that the author_id and category_id exist
+        if (!$this->isValidAuthor($this->author_id)) {
+            http_response_code(404);
+            echo json_encode(['message' => 'author_id Not Found']);
+            return false;
+        }
+    
+        if (!$this->isValidCategory($this->category_id)) {
+            http_response_code(404);
+            echo json_encode(['message' => 'category_id Not Found']);
+            return false;
+        }
+    
         $query = 'UPDATE ' . $this->table . ' 
                   SET quote = :quote, 
                       author_id = :author_id, 
                       category_id = :category_id 
                   WHERE id = :id';
-
+    
         $stmt = $this->conn->prepare($query);
-
+    
         $this->author_id = intval($this->author_id);
         $this->category_id = intval($this->category_id);
         $this->id = intval($this->id);
-
+    
         $stmt->bindValue(':quote', $this->quote, PDO::PARAM_STR);
         $stmt->bindValue(':author_id', $this->author_id, PDO::PARAM_INT);
         $stmt->bindValue(':category_id', $this->category_id, PDO::PARAM_INT);
         $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
-
+    
         try {
             if ($stmt->execute()) {
                 if ($stmt->rowCount()) {
+                    http_response_code(200);
+                    echo json_encode([
+                        'id' => $this->id,
+                        'quote' => $this->quote,
+                        'author_id' => $this->author_id,
+                        'category_id' => $this->category_id
+                    ]);
                     return true;
                 } else {
-                    echo json_encode(['message' => 'No changes made or ID not found']);
+                    http_response_code(404);
+                    echo json_encode(['message' => 'Quote not found or no changes made']);
                     return false;
                 }
             }
         } catch (PDOException $e) {
+            http_response_code(500);
             error_log("SQL Error: " . $e->getMessage());
             echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
             return false;
         }
-
+    
         return false;
     }
+    
 
     // ======================
     // DELETE QUOTE
