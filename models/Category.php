@@ -98,35 +98,53 @@
     return false;
 }
 
+//update
+public function update() {
+  // Validate required inputs
+  if (!isset($this->id) || empty($this->category)) {
+      echo json_encode(['message' => 'Missing Required Parameters']);
+      return false;
+  }
 
-  public function update() {
-    $query = 'UPDATE ' . $this->table . ' 
-              SET category = :category 
-              WHERE id = :id';
+  // Check if category exists
+  $checkQuery = 'SELECT id FROM ' . $this->table . ' WHERE id = :id';
+  $checkStmt = $this->conn->prepare($checkQuery);
+  $checkStmt->bindParam(':id', $this->id, PDO::PARAM_INT);
+  $checkStmt->execute();
 
-    $stmt = $this->conn->prepare($query);
+  if ($checkStmt->rowCount() === 0) {
+      echo json_encode(['message' => 'category_id Not Found']);
+      return false;
+  }
 
-    // Clean data
-    $this->category = htmlspecialchars(strip_tags($this->category));
-    $this->id = htmlspecialchars(strip_tags($this->id));
+  // Clean data
+  $this->category = htmlspecialchars(strip_tags($this->category));
+  $this->id = intval($this->id);
 
-    // Bind data
-    $stmt->bindParam(':category', $this->category);
-    $stmt->bindParam(':id', $this->id);
+  // Update query
+  $query = 'UPDATE ' . $this->table . ' 
+            SET category = :category 
+            WHERE id = :id';
 
-    if ($stmt->execute()) {
-        if ($stmt->rowCount()) {
-            return true;
-        } else {
-            echo "No rows updated. ID might not exist.";
-            return false;
-        }
-    }
+  $stmt = $this->conn->prepare($query);
+  $stmt->bindParam(':category', $this->category);
+  $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
 
-    // Output detailed error
-    $error = $stmt->errorInfo();
-    echo "SQL Error: " . $error[2];
-    return false;
+  try {
+      if ($stmt->execute()) {
+          echo json_encode([
+              'id' => $this->id,
+              'category' => $this->category
+          ]);
+          return true;
+      }
+  } catch (PDOException $e) {
+      echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
+      return false;
+  }
+
+  echo json_encode(['message' => 'Category Not Updated']);
+  return false;
 }
 
   // Delete Category

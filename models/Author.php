@@ -92,59 +92,51 @@
     return false;
 }
 
-
-    // Update Author
-    public function update() {
-      // Create query
-      $query = 'UPDATE ' . $this->table . ' SET author = :author WHERE id = :id';
-
-      // Prepare statement
-      $stmt = $this->conn->prepare($query);
-
-      // Clean data
-      $this->author = htmlspecialchars(strip_tags($this->author));
-      $this->id = htmlspecialchars(strip_tags($this->id));
-
-      // Bind data
-      $stmt->bindParam(':author', $this->author);
-      $stmt->bindParam(':id', $this->id);
-
-      // Execute query
-      if ($stmt->execute()) {
-        return true;
-      }
-
-      // Print error if something goes wrong
-      printf("Error: %s.\n", $stmt->error);
-
+   // Update Author
+public function update() {
+  // Validate input
+  if (!isset($this->id) || empty($this->author)) {
+      echo json_encode(['message' => 'Missing Required Parameters']);
       return false;
-    }
-// Update Author ID
-public function updateID() {
-    // Create query
-    $query = 'UPDATE ' . $this->table . ' SET id = :id WHERE author = :author';
-
-    // Prepare statement
-    $stmt = $this->conn->prepare($query);
-
-    // Clean data
-    $this->author = htmlspecialchars(strip_tags($this->author));
-    $this->id = htmlspecialchars(strip_tags($this->id));
-
-    // Bind data
-    $stmt->bindParam(':author', $this->author);
-    $stmt->bindParam(':id', $this->id);
-
-    // Execute query
-    if ($stmt->execute()) {
-      return true;
-    }
-
-    // Print error if something goes wrong
-    printf("Error: %s.\n", $stmt->error);
-
-    return false;
   }
+
+  // Check if the author exists
+  $checkQuery = 'SELECT id FROM ' . $this->table . ' WHERE id = :id';
+  $checkStmt = $this->conn->prepare($checkQuery);
+  $checkStmt->bindParam(':id', $this->id, PDO::PARAM_INT);
+  $checkStmt->execute();
+
+  if ($checkStmt->rowCount() === 0) {
+      echo json_encode(['message' => 'author_id Not Found']);
+      return false;
+  }
+
+  // Create update query
+  $query = 'UPDATE ' . $this->table . ' SET author = :author WHERE id = :id';
+
+  // Prepare and bind
+  $stmt = $this->conn->prepare($query);
+  $stmt->bindParam(':author', $this->author);
+  $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
+
+  // Execute and respond
+  try {
+      if ($stmt->execute()) {
+          echo json_encode([
+              'id' => $this->id,
+              'author' => $this->author
+          ]);
+          return true;
+      }
+  } catch (PDOException $e) {
+      echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
+      return false;
+  }
+
+  echo json_encode(['message' => 'Author Not Updated']);
+  return false;
+}
+
 
   //delete author
   public function delete() {

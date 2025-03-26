@@ -155,73 +155,87 @@ class Quote {
     // UPDATE QUOTE
     // ======================
     public function update() {
+        // Validate input
         if (
-            !isset($this->id) ||
-            empty($this->quote) || 
-            empty($this->author_id) || 
+            empty($this->id) ||
+            empty($this->quote) ||
+            empty($this->author_id) ||
             empty($this->category_id)
         ) {
-            http_response_code(400); // Bad request
+            http_response_code(400);
             echo json_encode(['message' => 'Missing Required Parameters']);
             return false;
         }
     
-        // Optionally: validate that the author_id and category_id exist
+        // Validate author_id exists
         if (!$this->isValidAuthor($this->author_id)) {
             http_response_code(404);
             echo json_encode(['message' => 'author_id Not Found']);
             return false;
         }
     
+        // Validate category_id exists
         if (!$this->isValidCategory($this->category_id)) {
             http_response_code(404);
             echo json_encode(['message' => 'category_id Not Found']);
             return false;
         }
     
-        $query = 'UPDATE ' . $this->table . ' 
-                  SET quote = :quote, 
-                      author_id = :author_id, 
-                      category_id = :category_id 
+        // Check if quote ID exists before updating
+        $checkQuery = 'SELECT id FROM ' . $this->table . ' WHERE id = :id';
+        $checkStmt = $this->conn->prepare($checkQuery);
+        $checkStmt->bindValue(':id', $this->id, PDO::PARAM_INT);
+        $checkStmt->execute();
+    
+        if (!$checkStmt->rowCount()) {
+            http_response_code(404);
+            echo json_encode(['message' => 'No Quotes Found']);
+            return false;
+        }
+    
+        // Clean input
+        $this->quote = htmlspecialchars(strip_tags($this->quote));
+        $this->id = intval($this->id);
+        $this->author_id = intval($this->author_id);
+        $this->category_id = intval($this->category_id);
+    
+        // Build update query
+        $query = 'UPDATE ' . $this->table . '
+                  SET quote = :quote,
+                      author_id = :author_id,
+                      category_id = :category_id
                   WHERE id = :id';
     
         $stmt = $this->conn->prepare($query);
-    
-        $this->author_id = intval($this->author_id);
-        $this->category_id = intval($this->category_id);
-        $this->id = intval($this->id);
     
         $stmt->bindValue(':quote', $this->quote, PDO::PARAM_STR);
         $stmt->bindValue(':author_id', $this->author_id, PDO::PARAM_INT);
         $stmt->bindValue(':category_id', $this->category_id, PDO::PARAM_INT);
         $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
     
+        // Execute and respond
         try {
             if ($stmt->execute()) {
-                if ($stmt->rowCount()) {
-                    http_response_code(200);
-                    echo json_encode([
-                        'id' => $this->id,
-                        'quote' => $this->quote,
-                        'author_id' => $this->author_id,
-                        'category_id' => $this->category_id
-                    ]);
-                    return true;
-                } else {
-                    http_response_code(404);
-                    echo json_encode(['message' => 'Quote not found or no changes made']);
-                    return false;
-                }
+                http_response_code(200);
+                echo json_encode([
+                    'id' => $this->id,
+                    'quote' => $this->quote,
+                    'author_id' => $this->author_id,
+                    'category_id' => $this->category_id
+                ]);
+                return true;
             }
         } catch (PDOException $e) {
             http_response_code(500);
-            error_log("SQL Error: " . $e->getMessage());
             echo json_encode(['message' => 'SQL Error: ' . $e->getMessage()]);
             return false;
         }
     
+        http_response_code(500);
+        echo json_encode(['message' => 'Quote Not Updated']);
         return false;
     }
+    
     
 
     // ======================
