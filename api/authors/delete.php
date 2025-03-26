@@ -28,16 +28,13 @@ if (!isset($data->id) || intval($data->id) <= 0) {
 // Set ID for deletion
 $author->id = intval($data->id);
 
-// Attempt to delete author
-if ($author->delete()) {
-    http_response_code(200); // OK
-    echo json_encode([
-        'id' => $author->id,
-        'message' => 'Author deleted'
-    ]);
+// Call the delete function
+$response = $author->delete();
+
+if ($response && is_array($response)) {
+    http_response_code($response['status']);
+    echo json_encode($response);
 } else {
-    http_response_code(404); // Not found
-    echo json_encode([
-        'message' => 'No author found with the specified ID'
-    ]);
+    http_response_code(500); // Internal Server Error
+    echo json_encode(['message' => 'Unexpected error while deleting author']);
 }

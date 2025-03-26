@@ -215,13 +215,11 @@ class Quote {
     // DELETE QUOTE
     // ======================
     public function delete() {
-        // Validate ID
         if (!isset($this->id) || intval($this->id) <= 0) {
             return ['status' => 400, 'message' => 'Missing or invalid ID'];
         }
     
-        // Check if ID exists before deleting
-        $query = 'SELECT id FROM ' . $this->table . ' WHERE id = :id';
+        $query = 'SELECT id FROM quotes WHERE id = :id';
         $stmt = $this->conn->prepare($query);
         $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
         $stmt->execute();
@@ -230,8 +228,7 @@ class Quote {
             return ['status' => 404, 'message' => 'No quote found with the specified ID'];
         }
     
-        // Proceed with deletion
-        $query = 'DELETE FROM ' . $this->table . ' WHERE id = :id';
+        $query = 'DELETE FROM quotes WHERE id = :id';
         $stmt = $this->conn->prepare($query);
         $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
     
@@ -250,6 +247,7 @@ class Quote {
     
         return false;
     }
+    
     
 
     // ======================

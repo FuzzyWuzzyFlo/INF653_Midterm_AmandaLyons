@@ -131,12 +131,11 @@
 
   // Delete Category
   public function delete() {
-    //  Validate ID
     if (!isset($this->id) || intval($this->id) <= 0) {
         return ['status' => 400, 'message' => 'Missing or invalid ID'];
     }
 
-    // Check if ID exists before deleting
+    // Check if ID exists
     $query = 'SELECT id FROM categories WHERE id = :id';
     $stmt = $this->conn->prepare($query);
     $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);
@@ -146,7 +145,7 @@
         return ['status' => 404, 'message' => 'No category found with the specified ID'];
     }
 
-    // Proceed with deletion
+    // Proceed to delete
     $query = 'DELETE FROM categories WHERE id = :id';
     $stmt = $this->conn->prepare($query);
     $stmt->bindValue(':id', $this->id, PDO::PARAM_INT);

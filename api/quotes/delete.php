@@ -8,7 +8,7 @@ header('Access-Control-Allow-Headers: Access-Control-Allow-Headers, Content-Type
 include_once '../../config/Database.php';
 include_once '../../models/Quote.php';
 
-// Instantiate Database & connect
+// Instantiate DB & connect
 $database = new Database();
 $db = $database->connect();
 
@@ -18,7 +18,7 @@ $quote = new Quote($db);
 // Get raw input data
 $data = json_decode(file_get_contents("php://input"));
 
-//  Validate ID
+// Validate ID
 if (!isset($data->id) || intval($data->id) <= 0) {
     http_response_code(400); // Bad request
     echo json_encode(['message' => 'Missing or invalid ID']);
@@ -28,16 +28,13 @@ if (!isset($data->id) || intval($data->id) <= 0) {
 // Assign ID to the object
 $quote->id = intval($data->id);
 
-// Attempt to delete the quote
-if ($quote->delete()) {
-    http_response_code(200); // OK
-    echo json_encode([
-        'id' => $quote->id,
-        'message' => 'Quote deleted'
-    ]);
+// Delete quote and handle structured response
+$response = $quote->delete();
+
+if ($response && is_array($response)) {
+    http_response_code($response['status']);
+    echo json_encode($response);
 } else {
-    http_response_code(404); // Not found
-    echo json_encode([
-        'message' => 'No quote found with the specified ID'
-    ]);
+    http_response_code(500);
+    echo json_encode(['message' => 'Unexpected error during deletion']);
 }
